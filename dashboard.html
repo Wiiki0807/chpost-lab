@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>chpost-lab 儀表板</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <style>
+    body {
+      font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
+      margin: 0;
+      padding: 2rem;
+      background: #f5f6f8;
+      color: #1b1b1f;
+    }
+    h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+    p.subtitle { margin-top: 0; color: #5a5a66; }
+    .card {
+      background: #fff;
+      border: 1px solid #e1e1e6;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .kpi-row { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+    .kpi { flex: 1 1 180px; }
+    .kpi .value { font-size: 2rem; font-weight: 600; }
+    .kpi .label { color: #5a5a66; font-size: 0.875rem; }
+  </style>
+</head>
+<body>
+  <h1>chpost-lab 郵務數據儀表板</h1>
+  <p class="subtitle">資料來源：<code>/api/v1/volume</code></p>
+
+  <div class="card kpi-row">
+    <div class="kpi">
+      <div class="value" id="kpi-total">—</div>
+      <div class="label">總投遞件數</div>
+    </div>
+    <div class="kpi">
+      <div class="value" id="kpi-offices">—</div>
+      <div class="label">統計局數</div>
+    </div>
+    <div class="kpi">
+      <div class="value" id="kpi-months">—</div>
+      <div class="label">涵蓋月份</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <canvas id="volume-chart" height="110"></canvas>
+  </div>
+
+  <script>
+    async function render() {
+      const response = await fetch("/api/v1/volume");
+      const data = await response.json();
+      const items = data.items ?? [];
+
+      const months = [...new Set(items.map(i => i.month))].sort();
+      const offices = [...new Set(items.map(i => i.office_code))].sort();
+
+      document.getElementById("kpi-total").textContent =
+        (data.total_pieces ?? 0).toLocaleString();
+      document.getElementById("kpi-offices").textContent = offices.length;
+      document.getElementById("kpi-months").textContent = months.length;
+
+      const totalsByMonth = months.map(month =>
+        items.filter(i => i.month === month)
+             .reduce((sum, i) => sum + i.total_pieces, 0)
+      );
+
+      new Chart(document.getElementById("volume-chart"), {
+        type: "bar",
+        data: {
+          labels: months,
+          datasets: [{
+            label: "每月投遞件數",
+            data: totalsByMonth,
+            backgroundColor: "#0969da"
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }
+
+    render().catch(err => {
+      document.body.insertAdjacentHTML(
+        "beforeend",
+        `<div class="card">載入失敗：${err.message}。請確認服務已啟動且已執行 seed_data。</div>`
+      );
+    });
+  </script>
+</body>
+</html>
