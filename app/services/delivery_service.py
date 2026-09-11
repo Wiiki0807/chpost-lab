@@ -9,7 +9,7 @@ ON_TIME_THRESHOLD_DAYS = 2
 
 def transit_days(accepted_at: datetime, delivered_at: datetime) -> int:
     """回傳從收寄到投遞所經過的天數。"""
-    return delivered_at.day - accepted_at.day
+    return (delivered_at - accepted_at).days
 
 
 def is_on_time(delivery: Delivery) -> bool:
