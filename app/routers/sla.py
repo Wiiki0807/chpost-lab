@@ -1,10 +1,23 @@
 from __future__ import annotations
 
-from fastapi import APIRouter
+import sqlite3
+
+from fastapi import APIRouter, Depends, Query
+
+from app.db import get_db
+from app.models import SlaResponse
+from app.services import sla_service
 
 router = APIRouter(tags=["sla"])
 
-# TODO: 實作 GET /api/v1/sla
-# 回傳各投遞局的時效達成率，T+2 天內送達視為達標。
-# 需支援 region 與 month 兩個 query 參數。
-# 請照 volume.py 的三層寫法（router / service / repository）。
+
+@router.get("/sla", response_model=SlaResponse)
+def get_sla(
+    connection: sqlite3.Connection = Depends(get_db),
+    region: str | None = Query(default=None, max_length=8, description="行政區代碼"),
+    month: str | None = Query(
+        default=None, pattern=r"^\d{4}-\d{2}$", description="格式為 YYYY-MM"
+    ),
+) -> SlaResponse:
+    """各投遞局時效達成率，T+2 天內送達視為達標。"""
+    return sla_service.get_sla(connection, region=region, month=month)

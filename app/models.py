@@ -33,3 +33,16 @@ class MonthlyVolume(BaseModel):
 class VolumeResponse(BaseModel):
     items: list[MonthlyVolume]
     total_pieces: int
+
+
+class OfficeSla(BaseModel):
+    office_code: str
+    office_name: str
+    delivered_count: int
+    on_time_count: int
+    on_time_rate: float = Field(description="百分比，保留到小數點後二位")
+
+
+class SlaResponse(BaseModel):
+    items: list[OfficeSla]
+    overall_on_time_rate: float
